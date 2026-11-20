@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Domestic Labor & Specialized Care App | تطبيق العمالة المنزلية والخدمات المتخصصة</title>
+    <!-- FontAwesome & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+</head>
+<body style="background:#0f172a; margin:0;">
+
+<div class="mobile-preview-container">
+    <div class="device-frame">
+        <!-- iOS/Android Status Bar -->
+        <div class="device-notch">
+            <span>9:41</span>
+            <div class="notch-pill"></div>
+            <div>
+                <i class="fa-solid fa-signal" style="font-size:0.75rem; margin-right:4px;"></i>
+                <i class="fa-solid fa-wifi" style="font-size:0.75rem; margin-right:4px;"></i>
+                <i class="fa-solid fa-battery-full" style="font-size:0.85rem;"></i>
+            </div>
+        </div>
+
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="app-brand">
+                <div class="app-brand-logo">
+                    <i class="fa-solid fa-hands-holding-child"></i>
+                </div>
+                <div class="app-brand-name">
+                    <h3>SAFWA CARE</h3>
+                    <span>Domestic & Specialized Services</span>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button class="btn btn-sm btn-outline" onclick="toggleLanguage()" title="Switch Arabic/English" style="border-radius:20px; font-weight:700;">
+                    <i class="fa-solid fa-globe"></i> AR/EN
+                </button>
+                <a href="../admin/index.html" class="btn btn-sm btn-outline" style="border-radius:20px;" title="Switch to Admin Dashboard">
+                    <i class="fa-solid fa-chart-line"></i> Admin
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Scrollable App Viewport -->
+        <div class="app-viewport">
+
+            <!-- Kafala Sponsorship Notification Banner (Shows if 3-month package matured) -->
+            <div id="kafalaNotificationBanner" style="display:none;"></div>
+
+            <!-- Active Live Service Tracking Bar -->
+            <div id="liveTrackingContainer" style="display:none;">
+                <div class="live-tracking-panel">
+                    <div class="tracking-header">
+                        <div class="live-indicator">
+                            <div class="pulsing-dot"></div>
+                            <span>Active Shift in Progress</span>
+                        </div>
+                        <span id="trackingRemaining" style="font-size:0.75rem; font-weight:600; background:rgba(255,255,255,0.25); padding:0.2rem 0.5rem; border-radius:10px;"></span>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3 id="trackingWorkerName" style="font-size:1.15rem; font-weight:800; margin:0;"></h3>
+                            <div id="trackingProfession" style="font-size:0.8rem; opacity:0.9;"></div>
+                            <div style="font-size:0.75rem; margin-top:0.35rem; opacity:0.85;">
+                                <i class="fa-solid fa-location-dot"></i> <span id="trackingAddress"></span>
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.7rem; text-transform:uppercase; opacity:0.85;">Elapsed Time</div>
+                            <div id="liveTimerDisplay" class="timer-digits">00:00:00</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:0.85rem; padding-top:0.75rem; border-top:1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.75rem;"><i class="fa-solid fa-bus"></i> Transport: Coaster Bus KSA-7821-B Assigned</span>
+                        <span class="badge" style="background:#10b981; color:white;">GPS Tracked</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Discounted 3-Month Package (11,000 SAR) with Kafala Eligibility -->
+            <div id="featuredPromoContainer"></div>
+
+            <!-- Filter Tabs -->
+            <div class="category-tabs">
+                <button class="tab-pill active" onclick="filterCategory(this, 'all')">All Services</button>
+                <button class="tab-pill" onclick="filterCategory(this, 'hourly')">
+                    <i class="fa-regular fa-clock"></i> Hourly Visits
+                </button>
+                <button class="tab-pill" onclick="filterCategory(this, 'monthly')">
+                    <i class="fa-regular fa-calendar-days"></i> Monthly Contracts
+                </button>
+                <button class="tab-pill" onclick="filterCategory(this, 'domestic')">
+                    <i class="fa-solid fa-broom"></i> Domestic Workers (Capped)
+                </button>
+                <button class="tab-pill" onclick="filterCategory(this, 'specialized')">
+                    <i class="fa-solid fa-user-nurse"></i> Nurses & Caregivers
+                </button>
+            </div>
+
+            <!-- Ministry Price Regulation Notice Card -->
+            <div style="margin: 0.5rem 1rem 0; padding:0.75rem 1rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; font-size:0.75rem; color:#1e40af;">
+                <div style="display:flex; gap:0.5rem; align-items:flex-start;">
+                    <i class="fa-solid fa-circle-info" style="font-size:1rem; margin-top:2px;"></i>
+                    <div>
+                        <strong>Ministry Price Caps Guarantee:</strong> General domestic worker rates strictly capped at <strong>123 SAR/hour</strong> and <strong>3,230 SAR/month</strong>. Specialized roles (Nurses, Caregivers, Cooks, Drivers) have no price caps.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workers & Packages Catalog -->
+            <div class="cards-list" id="workersListContainer">
+                <!-- Dynamically loaded via app.js -->
+            </div>
+        </div>
+
+        <!-- Mobile App Bottom Navigation -->
+        <div class="app-bottom-nav">
+            <div class="bottom-nav-item active" onclick="loadWorkers('all')">
+                <i class="fa-solid fa-house"></i>
+                <span>Explore</span>
+            </div>
+            <div class="bottom-nav-item" onclick="loadWorkers('hourly')">
+                <i class="fa-solid fa-stopwatch"></i>
+                <span>Hourly</span>
+            </div>
+            <div class="bottom-nav-item" onclick="loadWorkers('monthly')">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Monthly</span>
+            </div>
+            <div class="bottom-nav-item" onclick="checkActiveTracking()">
+                <i class="fa-solid fa-route"></i>
+                <span>Tracking</span>
+            </div>
+            <div class="bottom-nav-item" onclick="checkKafalaEligibility()">
+                <i class="fa-solid fa-id-card-clip"></i>
+                <span>Kafala</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide-up Checkout & Payment Sheet (Apple Pay & Google Pay) -->
+<div class="modal-overlay" id="paymentSheetOverlay" onclick="if(event.target === this) closePaymentSheet()">
+    <div class="payment-sheet" id="paymentSheet">
+        <div class="sheet-handle"></div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="font-size:1.15rem; font-weight:800; margin:0;">Complete Booking</h3>
+            <button class="btn-icon" style="width:32px; height:32px;" onclick="closePaymentSheet()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div style="margin-bottom:1.25rem;">
+            <div class="order-summary-row">
+                <span>Selected Service:</span>
+                <strong id="summaryItemName">3-Month Domestic Package</strong>
+            </div>
+            <div class="order-summary-row">
+                <span>Contract Duration:</span>
+                <span id="summaryDuration">3 Months</span>
+            </div>
+            <div class="order-summary-row" id="summaryKafalaNotice" style="display:none; color:#2563eb;">
+                <span><i class="fa-solid fa-id-card-clip"></i> Kafala Eligibility:</span>
+                <strong>Included upon completion</strong>
+            </div>
+            <div class="order-summary-row">
+                <span>Transportation:</span>
+                <span style="color:#059669; font-weight:600;"><i class="fa-solid fa-bus"></i> Company Bus/Van Included</span>
+            </div>
+            <div class="order-summary-total">
+                <span>Total Amount:</span>
+                <span id="summaryTotal" style="color:#059669;">11,000 SAR</span>
+            </div>
+        </div>
+
+        <!-- Client Contact Info -->
+        <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1.25rem;">
+            <input type="text" id="checkoutClientName" class="form-control" placeholder="Your Full Name (اسم العميل)" value="Fahad Al-Saud">
+            <input type="tel" id="checkoutClientPhone" class="form-control" placeholder="Mobile (+966 5X XXX XXXX)" value="+966 50 554 1234">
+            <input type="text" id="checkoutClientAddress" class="form-control" placeholder="District & Villa/Apartment Number" value="Al-Malqa, Riyadh">
+        </div>
+
+        <!-- Payment Actions: Apple Pay & Google Pay -->
+        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            <button class="btn-apple-pay" onclick="processPayment('apple_pay')">
+                <i class="fa-brands fa-apple"></i>
+                <span>Pay with Apple Pay</span>
+            </button>
+            <button class="btn-google-pay" onclick="processPayment('google_pay')">
+                <i class="fa-brands fa-google"></i>
+                <span>Pay with Google Pay</span>
+            </button>
+            <button class="btn btn-outline w-100" style="height:46px; border-radius:12px; font-weight:600;" onclick="processPayment('mada')">
+                <i class="fa-solid fa-credit-card"></i> Pay with Mada / Credit Card
+            </button>
+        </div>
+
+        <p style="text-align:center; font-size:0.7rem; color:#94a3b8; margin-top:0.85rem; margin-bottom:0;">
+            <i class="fa-solid fa-lock"></i> 256-bit Encrypted Saudi Payment Gateway (Saudi Central Bank Compliant)
+        </p>
+    </div>
+</div>
+
+<!-- Payment Success Modal -->
+<div class="modal-overlay" id="paymentSuccessModal">
+    <div class="modal-dialog" style="max-width:380px; text-align:center;">
+        <div class="modal-body" style="padding:2rem 1.5rem;">
+            <div style="width:65px; height:65px; background:#d1fae5; color:#059669; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; font-size:2rem;">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 style="font-size:1.3rem; font-weight:800; color:#0f172a; margin-bottom:0.25rem;">Payment Confirmed!</h3>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">Processed securely via <span id="successMethodName" style="font-weight:700;">Apple Pay</span></p>
+
+            <div style="background:#f8fafc; border-radius:14px; padding:1rem; text-align:left; font-size:0.8rem; margin-bottom:1.25rem; border:1px solid #e2e8f0;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                    <span style="color:#64748b;">Booking Code:</span>
+                    <strong id="successBookingCode">BK-SA-11092</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+                    <span style="color:#64748b;">Amount Paid:</span>
+                    <strong id="successAmount" style="color:#059669;">11,000 SAR</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#64748b;">Payment Ref:</span>
+                    <span id="successPaymentRef" style="font-family:monospace; font-size:0.7rem;"></span>
+                </div>
+            </div>
+
+            <div id="successKafalaAlert" style="background:#eff6ff; border:1px solid #93c5fd; padding:0.75rem; border-radius:10px; font-size:0.75rem; color:#1e40af; margin-bottom:1.25rem; text-align:left;">
+            </div>
+
+            <button class="btn btn-primary w-100" onclick="closeSuccessModal(); checkActiveTracking();">
+                <i class="fa-solid fa-route"></i> Track Worker & Service
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Kafala Sponsorship Transfer Modal -->
+<div class="modal-overlay" id="kafalaModal">
+    <div class="modal-dialog" style="max-width:440px;">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fa-solid fa-id-card-clip text-primary"></i> Sponsorship Transfer (نقل كفالة)</h3>
+            <button class="btn-icon" style="width:30px; height:30px;" onclick="closeKafalaModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <div style="background:#f8fafc; padding:1rem; border-radius:12px; margin-bottom:1rem; font-size:0.85rem;">
+                <div>Worker: <strong id="kafalaWorkerName">Dewi Lestari</strong></div>
+                <div>Nationality: <strong id="kafalaNationality">Indonesian</strong></div>
+                <div style="margin-top:0.5rem; color:#059669; font-weight:600;">
+                    <i class="fa-solid fa-check-double"></i> 3-Month Contract Requirement Satisfied
+                </div>
+            </div>
+
+            <div id="kafalaQuotaWarning" style="display:none; background:#fee2e2; border:1px solid #ef4444; color:#991b1b; padding:0.75rem; border-radius:10px; font-size:0.8rem; margin-bottom:1rem;"></div>
+
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:1rem;">
+                <i class="fa-solid fa-scale-balanced"></i> <span id="kafalaQuotaRemaining"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Sponsor Saudi National ID / Resident Iqama (رقم الهوية الوطنية/الإقامة):</label>
+                <input type="text" id="kafalaNationalId" class="form-control" placeholder="10XXXXXXXX" value="1098273645">
+            </div>
+
+            <div style="font-size:0.75rem; color:#64748b;">
+                * By proceeding, an automated transfer request will be submitted to the Ministry of Human Resources (Musaned) portal under company quota.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeKafalaModal()">Cancel</button>
+            <button class="btn btn-primary" id="btnSubmitKafala" onclick="submitKafalaTransfer()">
+                <i class="fa-solid fa-paper-plane"></i> Submit Transfer Request
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>

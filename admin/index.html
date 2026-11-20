@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Dashboard | Ministry Compliance & Domestic Labor System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<div class="app-container">
+    <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="fa-solid fa-landmark"></i></div>
+            <div class="logo-text"><h2>SAFWA LABOR</h2><span>KSA Labor Control</span></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Core Operations</div>
+            <a href="index.html" class="nav-item active">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Ministry Compliance</span>
+                <span class="nav-badge badge-success">Live</span>
+            </a>
+            <a href="workers.html" class="nav-item">
+                <i class="fa-solid fa-users"></i>
+                <span>Workers Directory</span>
+                <span class="nav-badge badge-warning">3 Risk</span>
+            </a>
+            <a href="time-tracking.html" class="nav-item">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Time & Hours Tracking</span>
+                <span class="nav-badge badge-info">1 Active</span>
+            </a>
+            <a href="housing.html" class="nav-item">
+                <i class="fa-solid fa-building-shield"></i>
+                <span>Housing & Security</span>
+            </a>
+            <a href="fleet.html" class="nav-item">
+                <i class="fa-solid fa-bus"></i>
+                <span>Fleet Transportation</span>
+                <span class="nav-badge badge-info">4 Fleet</span>
+            </a>
+
+            <div class="nav-section-title">Legal & Talent</div>
+            <a href="kafala.html" class="nav-item">
+                <i class="fa-solid fa-id-card-clip"></i>
+                <span>Kafala Sponsorship</span>
+            </a>
+            <a href="hr-maharah.html" class="nav-item">
+                <i class="fa-solid fa-briefcase"></i>
+                <span>Maharah HR Hiring</span>
+                <span class="nav-badge badge-success">4 Roles</span>
+            </a>
+            <a href="finance.html" class="nav-item">
+                <i class="fa-solid fa-wallet"></i>
+                <span>Finance & Price Caps</span>
+            </a>
+
+            <div class="nav-section-title">App Client Channel</div>
+            <a href="../app/index.html" class="nav-item" target="_blank">
+                <i class="fa-solid fa-mobile-screen-button text-primary"></i>
+                <span>Open Mobile App View</span>
+            </a>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" onclick="document.getElementById('appSidebar').classList.toggle('open')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    <h1>Ministry of Human Resources Compliance Center</h1>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <button class="btn btn-outline btn-sm" onclick="toggleLanguage()">
+                    <i class="fa-solid fa-globe"></i> <span>AR / EN</span>
+                </button>
+                <a href="../app/index.html" class="app-switcher-btn" target="_blank">
+                    <i class="fa-solid fa-mobile-screen"></i> Client Mobile App
+                </a>
+            </div>
+        </header>
+
+        <main class="content-body">
+            <div class="compliance-banner">
+                <div class="compliance-banner-info">
+                    <div class="compliance-banner-icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="compliance-banner-text">
+                        <h3>Saudi Ministry of Labor (HRSD / Musaned) Regulatory Status</h3>
+                        <p>Real-time audit: 10% Hourly Domestic Visa Quota, Nationality Diversity Rule, Price Caps (123 SAR/hr & 3,230 SAR/mo), and Kafala Transfer Quotas.</p>
+                    </div>
+                </div>
+                <button class="btn" style="background:white; color:#065f46; font-weight:700;" onclick="loadComplianceDashboard()">
+                    <i class="fa-solid fa-rotate-right"></i> Run Compliance Re-Audit
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <!-- 10% Hourly Rule Metric -->
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">10% Hourly Visa Allocation Rule</span>
+                        <div class="stat-card-icon" style="background:#ccfbf1; color:#0f766e;">
+                            <i class="fa-solid fa-percent"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value" id="metricHourlyRatio">15.8%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="hourlyRatioProgress" style="width:79%; background:#10b981;"></div>
+                    </div>
+                    <div class="stat-card-meta" id="metricHourlyStatus">
+                        <span class="badge badge-success"><i class="fa-solid fa-check"></i> Compliant (Target ≥ 10%)</span>
+                    </div>
+                </div>
+
+                <!-- Price Caps Status -->
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Price Cap Audit (123/hr & 3230/mo)</span>
+                        <div class="stat-card-icon" style="background:#d1fae5; color:#047857;">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value" style="color:#047857;">0 Violations</div>
+                    <div class="stat-card-meta">
+                        <span class="badge badge-success"><i class="fa-solid fa-check"></i> 100% Capped Domestic Rates</span>
+                    </div>
+                    <div style="font-size:0.7rem; color:#64748b; margin-top:0.35rem;">Nurses, Caregivers, Cooks, Drivers exempt</div>
+                </div>
+
+                <!-- Indonesian Runaway Alert Monitor -->
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Indonesian Absconding Risk</span>
+                        <div class="stat-card-icon" style="background:#fef3c7; color:#b45309;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value" style="color:#b45309;">3 <small style="font-size:0.9rem;">Workers</small></div>
+                    <div class="stat-card-meta">
+                        <span class="badge badge-warning"><i class="fa-solid fa-shield"></i> 24/7 Housing Supervision</span>
+                    </div>
+                    <div style="font-size:0.7rem; color:#64748b; margin-top:0.35rem;">High demand nationality; strict gate pass protocol</div>
+                </div>
+
+                <!-- Total Fleet & Transport -->
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-card-title">Transportation Fleet (Buses & Vans)</span>
+                        <div class="stat-card-icon" style="background:#e0f2fe; color:#0284c7;">
+                            <i class="fa-solid fa-bus"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card-value">4 <small style="font-size:0.9rem;">Vehicles</small></div>
+                    <div class="stat-card-meta">
+                        <span class="badge badge-info"><i class="fa-solid fa-route"></i> Active Daily Dispatch</span>
+                    </div>
+                    <div style="font-size:0.7rem; color:#64748b; margin-top:0.35rem;">Coaster Buses & HiAce Vans for hourly/monthly shifts</div>
+                </div>
+            </div>
+
+            <!-- Nationality Diversity & Ministry Quotas Table Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <i class="fa-solid fa-globe text-primary"></i>
+                        Nationality Diversity & Ministry Sponsorship Transfer (Kafala) Quotas
+                    </h3>
+                    <div class="panel-actions">
+                        <span style="font-size:0.8rem; color:#64748b;">
+                            <i class="fa-solid fa-info-circle"></i> Ministry Rule: No reliance on a single nationality allowed.
+                        </span>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nationality (الجنسية)</th>
+                                    <th>Total Visas Allocated</th>
+                                    <th>Hourly Allocation (Min 10%)</th>
+                                    <th>Monthly Allocation</th>
+                                    <th>Diversity Quota Status</th>
+                                    <th>Ministry Kafala Quota (Used/Cap)</th>
+                                    <th>Absconding Risk Alert</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nationalityQuotasTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Cap Compliance & Specialized Roles Exemption Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        <i class="fa-solid fa-tags text-primary"></i>
+                        Price Cap Enforcement & Regulatory Audit Matrix
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <div id="priceCapAuditStatus" style="margin-bottom:1.5rem;"></div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.25rem;">
+                        <div style="border:1px solid #10b981; background:#f0fdf4; border-radius:12px; padding:1.25rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                                <h4 style="color:#065f46; font-size:1rem; font-weight:700;">
+                                    <i class="fa-solid fa-lock"></i> Regulated Domestic Labor
+                                </h4>
+                                <span class="badge badge-success">MANDATORY CAP</span>
+                            </div>
+                            <ul style="font-size:0.85rem; color:#14532d; padding-left:1.2rem; line-height:1.7;">
+                                <li><strong>Hourly Domestic Cleaning:</strong> Maximum <strong>123 SAR / hour</strong>.</li>
+                                <li><strong>Monthly Domestic Worker:</strong> Maximum <strong>3,230 SAR / month</strong>.</li>
+                                <li>System automatically validates and prevents package creation or billing above these statutory caps.</li>
+                            </ul>
+                        </div>
+
+                        <div style="border:1px solid #3b82f6; background:#eff6ff; border-radius:12px; padding:1.25rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                                <h4 style="color:#1e40af; font-size:1rem; font-weight:700;">
+                                    <i class="fa-solid fa-shield-heart"></i> Specialized Health & Skilled Roles
+                                </h4>
+                                <span class="badge badge-info">EXEMPT FROM CAPS</span>
+                            </div>
+                            <ul style="font-size:0.85rem; color:#1e3a8a; padding-left:1.2rem; line-height:1.7;">
+                                <li><strong>Private Home Nurses (ممرضة خاصة):</strong> Uncapped market pricing (e.g. 4,800+ SAR).</li>
+                                <li><strong>Specialized Caregivers (رعاية كبار السن):</strong> Uncapped market pricing.</li>
+                                <li><strong>Private Family Cooks (طباخ/طباخة):</strong> Uncapped market pricing.</li>
+                                <li><strong>Private Family Drivers (سائق خاص):</strong> Uncapped market pricing.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:1.5rem;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h4 class="panel-title"><i class="fa-solid fa-user-tie text-primary"></i> Maharah HR Recruitment Tracker</h4>
+                        <a href="hr-maharah.html" class="btn btn-outline btn-sm">Manage Candidates</a>
+                    </div>
+                    <div class="panel-body">
+                        <p style="font-size:0.85rem; color:#475569; margin-bottom:1rem;">
+                            Target: Hire 2 Marketing Specialists & 2 Customer Service Representatives (Female preferred, ~7,000 SAR market salary) sourced through the <strong>Maharah</strong> platform.
+                        </p>
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.5rem;">
+                            <span>Marketing Specialists (2 Target)</span>
+                            <strong style="color:#059669;">1 Offered, 1 Interviewing</strong>
+                        </div>
+                        <div class="progress-bar mb-3">
+                            <div class="progress-fill" style="width:75%; background:#10b981;"></div>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.5rem;">
+                            <span>Customer Service Representatives (2 Target)</span>
+                            <strong style="color:#059669;">1 Hired, 1 Interviewing</strong>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:100%; background:#10b981;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h4 class="panel-title"><i class="fa-solid fa-door-closed text-primary"></i> Accommodation & Curfew Security</h4>
+                        <a href="housing.html" class="btn btn-outline btn-sm">Supervision Center</a>
+                    </div>
+                    <div class="panel-body">
+                        <p style="font-size:0.85rem; color:#475569; margin-bottom:1rem;">
+                            Company housing compound with appointed supervisors (Fatimah Al-Ghamdi & Nouf Al-Otaibi) ensuring strict perimeter surveillance to prevent workers from leaving the premises without authorized dispatch.
+                        </p>
+                        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+                            <div style="flex:1; background:#f8fafc; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; text-align:center;">
+                                <div style="font-size:1.25rem; font-weight:800; color:#0f766e;">100%</div>
+                                <div style="font-size:0.7rem; color:#64748b;">Curfew Compliance</div>
+                            </div>
+                            <div style="flex:1; background:#f8fafc; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; text-align:center;">
+                                <div style="font-size:1.25rem; font-weight:800; color:#b45309;">1 Prevented</div>
+                                <div style="font-size:0.7rem; color:#64748b;">Unauthorized Gate Exits</div>
+                            </div>
+                            <div style="flex:1; background:#f8fafc; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; text-align:center;">
+                                <div style="font-size:1.25rem; font-weight:800; color:#10b981;">0</div>
+                                <div style="font-size:0.7rem; color:#64748b;">Unreported Absconded</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script src="../assets/js/db.js"></script>
+<script src="../assets/js/admin.js"></script>
+</body>
+</html>

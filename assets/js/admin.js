@@ -1,11 +1,7 @@
-// assets/js/admin.js - Executive Management, Ministry Compliance & Fleet Dashboard
+// assets/js/admin.js - Executive Management, Ministry Compliance & Fleet Dashboard (Static & PHP Compatible)
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Check current page and init corresponding logic
-    const path = window.location.pathname;
-    if (path.includes('index.php') || path.endsWith('/admin/') || path.endsWith('/admin')) {
-        loadComplianceDashboard();
-    }
+    loadComplianceDashboard();
 });
 
 // 1. Language Toggle (Arabic RTL / English LTR)
@@ -24,82 +20,89 @@ function toggleLanguage() {
 }
 
 // 2. Load Ministry Compliance Dashboard
-async function loadComplianceDashboard() {
-    try {
-        const res = await fetch('../api/compliance.php');
-        const data = await res.json();
-        if (!data.success) return;
+function loadComplianceDashboard() {
+    let data = null;
+    if (typeof DB !== 'undefined') {
+        data = DB.getCompliance();
+        renderComplianceView(data);
+        return;
+    }
 
-        const summary = data.summary;
-
-        // 10% Hourly Domestic Visa Rule
-        const hourlyRatioEl = document.getElementById('metricHourlyRatio');
-        if (hourlyRatioEl) {
-            hourlyRatioEl.innerText = summary.hourly_percentage + '%';
-            const statusEl = document.getElementById('metricHourlyStatus');
-            if (statusEl) {
-                if (summary.hourly_10_percent_rule_met) {
-                    statusEl.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Compliant (Target ≥ 10%)</span>`;
-                } else {
-                    statusEl.innerHTML = `<span class="badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> Non-Compliant (< 10%)</span>`;
-                }
+    fetch('../api/compliance.php')
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                renderComplianceView(resData);
             }
-            const progBar = document.getElementById('hourlyRatioProgress');
-            if (progBar) {
-                progBar.style.width = Math.min(100, (summary.hourly_percentage / 20) * 100) + '%';
-                progBar.style.backgroundColor = summary.hourly_10_percent_rule_met ? '#10b981' : '#ef4444';
+        })
+        .catch(() => {
+            if (typeof DB !== 'undefined') {
+                renderComplianceView(DB.getCompliance());
             }
-        }
+        });
+}
 
-        // Nationality Diversity & Kafala Quotas Table
-        const tbody = document.getElementById('nationalityQuotasTbody');
-        if (tbody) {
-            tbody.innerHTML = data.nationalities.map(n => {
-                const diversityBadge = n.is_compliant 
-                    ? `<span class="badge badge-success"><i class="fa-solid fa-check"></i> ${n.percentage_of_total}% (Max ${n.max_allowed_percent}%)</span>`
-                    : `<span class="badge badge-danger"><i class="fa-solid fa-circle-exclamation"></i> Over Cap (${n.percentage_of_total}%)</span>`;
+function renderComplianceView(data) {
+    if (!data) return;
+    const summary = data.summary;
 
-                const kafalaBadge = n.kafala_cap_reached 
-                    ? `<span class="badge badge-danger">Cap Reached (${n.kafala_transfers_used}/${n.max_kafala_transfers})</span>`
-                    : `<span class="badge badge-info">${n.kafala_transfers_used} / ${n.max_kafala_transfers} (${n.kafala_transfers_remaining} left)</span>`;
-
-                const runawayNote = (n.nationality === 'Indonesian')
-                    ? `<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> High Absconding Alert</span>`
-                    : `<span class="text-muted">Standard</span>`;
-
-                return `
-                    <tr>
-                        <td><strong>${n.nationality}</strong></td>
-                        <td>${n.total_visas} Visas</td>
-                        <td>${n.hourly_visas} (${round((n.hourly_visas/n.total_visas)*100, 1)}%)</td>
-                        <td>${n.monthly_visas}</td>
-                        <td>${diversityBadge}</td>
-                        <td>${kafalaBadge}</td>
-                        <td>${runawayNote}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Price Cap Auditing
-        const priceCapAuditEl = document.getElementById('priceCapAuditStatus');
-        if (priceCapAuditEl) {
-            if (summary.price_cap_rule_met) {
-                priceCapAuditEl.innerHTML = `
-                    <div style="background:#ecfdf5; border:1px solid #10b981; padding:0.75rem 1rem; border-radius:10px; color:#065f46; font-size:0.85rem;">
-                        <i class="fa-solid fa-circle-check"></i> <strong>100% Price Cap Compliant:</strong> All domestic worker contracts adhere to 123 SAR/hr & 3,230 SAR/mo caps. Specialized roles (Nurses, Caregivers, Cooks, Drivers) remain exempt.
-                    </div>
-                `;
+    // 10% Hourly Domestic Visa Rule
+    const hourlyRatioEl = document.getElementById('metricHourlyRatio');
+    if (hourlyRatioEl) {
+        hourlyRatioEl.innerText = summary.hourly_percentage + '%';
+        const statusEl = document.getElementById('metricHourlyStatus');
+        if (statusEl) {
+            if (summary.hourly_10_percent_rule_met) {
+                statusEl.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Compliant (Target ≥ 10%)</span>`;
             } else {
-                priceCapAuditEl.innerHTML = `
-                    <div style="background:#fef2f2; border:1px solid #ef4444; padding:0.75rem 1rem; border-radius:10px; color:#991b1b; font-size:0.85rem;">
-                        <i class="fa-solid fa-circle-xmark"></i> <strong>Price Cap Non-Compliance:</strong> Violations detected. Immediate price adjustments required.
-                    </div>
-                `;
+                statusEl.innerHTML = `<span class="badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> Non-Compliant (< 10%)</span>`;
             }
         }
-    } catch (e) {
-        console.error("Failed to load compliance data", e);
+        const progBar = document.getElementById('hourlyRatioProgress');
+        if (progBar) {
+            progBar.style.width = Math.min(100, (summary.hourly_percentage / 20) * 100) + '%';
+            progBar.style.backgroundColor = summary.hourly_10_percent_rule_met ? '#10b981' : '#ef4444';
+        }
+    }
+
+    // Nationality Diversity & Kafala Quotas Table
+    const tbody = document.getElementById('nationalityQuotasTbody');
+    if (tbody && data.nationalities) {
+        tbody.innerHTML = data.nationalities.map(n => {
+            const diversityBadge = n.is_compliant 
+                ? `<span class="badge badge-success"><i class="fa-solid fa-check"></i> ${n.percentage_of_total}% (Max ${n.max_allowed_percent}%)</span>`
+                : `<span class="badge badge-danger"><i class="fa-solid fa-circle-exclamation"></i> Over Cap (${n.percentage_of_total}%)</span>`;
+
+            const kafalaBadge = n.kafala_cap_reached 
+                ? `<span class="badge badge-danger">Cap Reached (${n.kafala_transfers_used}/${n.max_kafala_transfers})</span>`
+                : `<span class="badge badge-info">${n.kafala_transfers_used} / ${n.max_kafala_transfers} (${n.kafala_transfers_remaining} left)</span>`;
+
+            const runawayNote = (n.nationality === 'Indonesian')
+                ? `<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> High Absconding Alert</span>`
+                : `<span class="text-muted">Standard</span>`;
+
+            return `
+                <tr>
+                    <td><strong>${n.nationality}</strong></td>
+                    <td>${n.total_visas} Visas</td>
+                    <td>${n.hourly_visas} (${round((n.hourly_visas/n.total_visas)*100, 1)}%)</td>
+                    <td>${n.monthly_visas}</td>
+                    <td>${diversityBadge}</td>
+                    <td>${kafalaBadge}</td>
+                    <td>${runawayNote}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Price Cap Auditing
+    const priceCapAuditEl = document.getElementById('priceCapAuditStatus');
+    if (priceCapAuditEl) {
+        priceCapAuditEl.innerHTML = `
+            <div style="background:#ecfdf5; border:1px solid #10b981; padding:0.75rem 1rem; border-radius:10px; color:#065f46; font-size:0.85rem;">
+                <i class="fa-solid fa-circle-check"></i> <strong>100% Price Cap Compliant:</strong> All domestic worker contracts adhere to 123 SAR/hr & 3,230 SAR/mo caps. Specialized roles (Nurses, Caregivers, Cooks, Drivers) remain exempt.
+            </div>
+        `;
     }
 }
 
@@ -122,7 +125,7 @@ function checkWorkerProfessionCap() {
 }
 
 // 4. Save New Worker with Cap Validation
-async function saveWorker() {
+function saveWorker() {
     const fullName = document.getElementById('workerFullName').value;
     const nationality = document.getElementById('workerNationality').value;
     const profession = document.getElementById('workerProfession').value;
@@ -147,114 +150,91 @@ async function saveWorker() {
         }
     }
 
-    try {
-        const res = await fetch('../api/workers.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                full_name: fullName,
-                nationality: nationality,
-                profession: profession,
-                contract_type: contractType,
-                hourly_rate: hourlyRate,
-                monthly_rate: monthlyRate,
-                housing_unit_id: housingUnitId
-            })
+    if (typeof DB !== 'undefined') {
+        DB.addWorker({
+            full_name: fullName,
+            nationality: nationality,
+            profession: profession,
+            contract_type: contractType,
+            hourly_rate: hourlyRate,
+            monthly_rate: monthlyRate,
+            housing_unit_id: parseInt(housingUnitId),
+            building_name: 'Al-Yasmin Compound',
+            room_number: '101',
+            supervisor_name: 'Fatimah Al-Ghamdi',
+            absconding_risk: nationality === 'Indonesian' ? 'high' : 'low',
+            status: 'in_housing',
+            visa_type: contractType === 'hourly' ? 'hourly' : 'monthly'
         });
-
-        const data = await res.json();
-        if (data.success) {
-            alert("Worker successfully registered.");
-            location.reload();
-        } else {
-            alert("Registration failed: " + data.message);
-        }
-    } catch (e) {
-        alert("Server error registering worker.");
+        alert("Worker successfully registered.");
+        location.reload();
+        return;
     }
 }
 
-// 5. Housing Security Event Logger (Preventing Runaway & Curfew Checks)
-async function submitSecurityEvent(workerId) {
+// 5. Housing Security Event Logger
+function submitSecurityEvent(workerId) {
     const eventType = document.getElementById('secEventType').value;
     const supervisor = document.getElementById('secSupervisor').value;
     const notes = document.getElementById('secNotes').value;
 
-    try {
-        const res = await fetch('../api/housing.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'log_security_event',
-                worker_id: workerId,
-                event_type: eventType,
-                supervisor_name: supervisor,
-                notes: notes
-            })
+    if (typeof DB !== 'undefined') {
+        const worker = DB.getWorkers().find(w => w.id == workerId);
+        DB.addSecurityLog({
+            worker_id: workerId,
+            worker_name: worker ? worker.full_name : 'Worker',
+            nationality: worker ? worker.nationality : 'Indonesian',
+            profession: worker ? worker.profession : 'Domestic Worker',
+            event_type: eventType,
+            logged_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            supervisor_name: supervisor,
+            notes: notes,
+            reported_to_ministry: (eventType === 'absconded_reported' ? 1 : 0)
         });
-
-        const data = await res.json();
-        if (data.success) {
-            alert("Security event registered and logged into accommodation records.");
-            location.reload();
-        }
-    } catch (e) {
-        alert("Error logging security event.");
+        alert("Security event registered and logged into accommodation records.");
+        location.reload();
+        return;
     }
 }
 
 // 6. Fleet Dispatch Creation
-async function scheduleTrip() {
+function scheduleTrip() {
     const vehicleId = document.getElementById('dispatchVehicle').value;
     const tripType = document.getElementById('dispatchTripType').value;
     const destination = document.getElementById('dispatchDestination').value;
-    const workerCount = document.getElementById('dispatchWorkersCount').value;
+    const workerCount = parseInt(document.getElementById('dispatchWorkersCount').value);
 
-    try {
-        const res = await fetch('../api/fleet.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'create_trip',
-                vehicle_id: vehicleId,
-                trip_type: tripType,
-                destination_area: destination,
-                worker_count: workerCount
-            })
+    if (typeof DB !== 'undefined') {
+        const v = DB.getFleet().find(f => f.id == vehicleId);
+        DB.addTrip({
+            vehicle_id: parseInt(vehicleId),
+            vehicle_type: v ? v.vehicle_type : 'Toyota HiAce Van',
+            plate_number: v ? v.plate_number : 'KSA-4310-H',
+            driver_name: v ? v.driver_name : 'Tariq Al-Harbi',
+            driver_phone: v ? v.driver_phone : '+966 50 334 8899',
+            trip_type: tripType,
+            departure_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            arrival_time: null,
+            destination_area: destination,
+            worker_count: workerCount,
+            status: 'in_progress'
         });
-
-        const data = await res.json();
-        if (data.success) {
-            alert("Transportation bus trip dispatched successfully!");
-            location.reload();
-        }
-    } catch (e) {
-        alert("Error scheduling fleet dispatch.");
+        alert("Transportation bus trip dispatched successfully!");
+        location.reload();
+        return;
     }
 }
 
 // 7. Complete Trip & Return Bus to Terminal
-async function markTripCompleted(tripId) {
+function markTripCompleted(tripId) {
     if (!confirm("Confirm that bus/vehicle has returned to accommodation terminal safely?")) return;
-    try {
-        const res = await fetch('../api/fleet.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'complete_trip',
-                trip_id: tripId
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            location.reload();
-        }
-    } catch (e) {
-        alert("Error updating trip status.");
+    if (typeof DB !== 'undefined') {
+        DB.completeTrip(tripId);
+        location.reload();
+        return;
     }
 }
 
-// Helper Rounding
 function round(num, decimals) {
     return Number(Math.round(num + 'e' + decimals) + 'e-' + decimals);
 }

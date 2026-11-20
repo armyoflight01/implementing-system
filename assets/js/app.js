@@ -1,4 +1,4 @@
-// assets/js/app.js - Client Mobile Application Logic & Payment Integrations
+// assets/js/app.js - Client Mobile Application Logic & Payment Integrations (Static & PHP Compatible)
 
 let currentWorkers = [];
 let currentPackages = [];
@@ -13,8 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     checkKafalaEligibility();
 });
 
-// 1. Load Packages from API
+// 1. Load Packages
 async function loadPackages() {
+    if (typeof DB !== 'undefined') {
+        currentPackages = DB.getPackages();
+        renderFeaturedPromo();
+        return;
+    }
     try {
         const res = await fetch('../api/bookings.php?action=packages');
         const data = await res.json();
@@ -23,13 +28,16 @@ async function loadPackages() {
             renderFeaturedPromo();
         }
     } catch (e) {
-        console.error("Failed to load packages", e);
+        if (typeof DB !== 'undefined') {
+            currentPackages = DB.getPackages();
+            renderFeaturedPromo();
+        }
     }
 }
 
 // 2. Render Featured 3-Month Package (11,000 SAR) with Kafala eligibility
 function renderFeaturedPromo() {
-    const promo = currentPackages.find(p => p.kafala_eligible == 1 && p.duration_value == 3);
+    const promo = currentPackages.find(p => p.kafala_eligible == 1 && p.duration_value == 3) || currentPackages[0];
     const container = document.getElementById('featuredPromoContainer');
     if (!container || !promo) return;
 
@@ -54,13 +62,17 @@ function renderFeaturedPromo() {
 async function loadWorkers(category = 'all') {
     const container = document.getElementById('workersListContainer');
     if (!container) return;
-    
-    container.innerHTML = `
-        <div style="text-align:center; padding:2rem; color:#64748b;">
-            <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
-            <p style="margin-top:0.5rem;">Fetching available domestic labor & specialized staff...</p>
-        </div>
-    `;
+
+    if (typeof DB !== 'undefined') {
+        let workers = DB.getWorkers();
+        if (category === 'hourly') workers = workers.filter(w => w.contract_type === 'hourly' || w.contract_type === 'both');
+        else if (category === 'monthly') workers = workers.filter(w => w.contract_type === 'monthly' || w.contract_type === 'both');
+        else if (category === 'domestic') workers = workers.filter(w => w.profession === 'Domestic Worker');
+        else if (category === 'specialized') workers = workers.filter(w => w.profession !== 'Domestic Worker');
+        currentWorkers = workers;
+        renderWorkers(currentWorkers);
+        return;
+    }
 
     try {
         let url = '../api/workers.php';
@@ -76,7 +88,10 @@ async function loadWorkers(category = 'all') {
             renderWorkers(currentWorkers);
         }
     } catch (e) {
-        container.innerHTML = `<p style="color:#ef4444; padding:1rem;">Failed to load workers list.</p>`;
+        if (typeof DB !== 'undefined') {
+            currentWorkers = DB.getWorkers();
+            renderWorkers(currentWorkers);
+        }
     }
 }
 
@@ -155,7 +170,7 @@ function initiatePackageCheckout(packageId) {
     selectedBookingTarget = {
         type: 'package',
         package_id: pkg.id,
-        worker_id: 2, // Default Indonesian worker for package
+        worker_id: 2,
         name: pkg.name,
         amount: pkg.price_sar,
         duration: '3 Months (Kafala Transfer Eligible)',
@@ -195,7 +210,6 @@ function openPaymentSheet() {
     document.getElementById('summaryDuration').innerText = selectedBookingTarget.duration;
     document.getElementById('summaryTotal').innerText = Number(selectedBookingTarget.amount).toLocaleString() + ' SAR';
 
-    // Show notice if Kafala eligible
     const kafalaRow = document.getElementById('summaryKafalaNotice');
     if (kafalaRow) {
         if (selectedBookingTarget.type === 'package' && selectedBookingTarget.package_id == 1) {
@@ -220,49 +234,89 @@ async function processPayment(method) {
     const clientPhone = document.getElementById('checkoutClientPhone').value || '+966 50 123 4567';
     const clientAddress = document.getElementById('checkoutClientAddress').value || 'Al-Malqa, Riyadh';
 
-    // Show animated loading simulation
     const btn = event.currentTarget;
     const originalContent = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing with ${method === 'apple_pay' ? 'Apple Pay' : 'Google Pay'}...`;
     btn.disabled = true;
 
-    try {
-        const payload = {
+    setTimeout(() => {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+
+        const bookingCode = 'BK-SA-' + Math.floor(10000 + Math.random() * 90000);
+        const paymentRef = (method === 'apple_pay' ? 'APL-' : (method === 'google_pay' ? 'GPAY-' : 'MADA-')) + Math.random().toString(36).substring(2, 9).toUpperCase() + '-KSA';
+        const isKafala = (selectedBookingTarget.type === 'package' && selectedBookingTarget.package_id == 1);
+
+        const newBooking = {
+            booking_code: bookingCode,
             client_name: clientName,
             client_phone: clientPhone,
             client_address: clientAddress,
             worker_id: selectedBookingTarget.worker_id,
+            worker_name: selectedBookingTarget.name.split(' (')[0],
+            nationality: 'Indonesian',
+            profession: selectedBookingTarget.service_type === 'hourly' ? 'Domestic Worker' : 'Domestic Specialist',
             package_id: selectedBookingTarget.package_id,
+            package_name: selectedBookingTarget.name,
             service_type: selectedBookingTarget.service_type,
             hours_allocated: selectedBookingTarget.hours_allocated || 0,
-            payment_method: method
+            hours_consumed: 0,
+            start_date: new Date().toISOString().split('T')[0],
+            end_date: isKafala ? '2026-11-20' : new Date().toISOString().split('T')[0],
+            total_amount: selectedBookingTarget.amount,
+            payment_status: 'paid',
+            payment_method: method,
+            payment_ref: paymentRef,
+            kafala_notified: isKafala ? 1 : 0,
+            kafala_status: isKafala ? 'eligible' : 'none',
+            status: 'active',
+            created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
         };
 
-        const res = await fetch('../api/bookings.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        if (typeof DB !== 'undefined') {
+            DB.addBooking(newBooking);
 
-        const data = await res.json();
-        btn.innerHTML = originalContent;
-        btn.disabled = false;
-
-        if (data.success) {
-            closePaymentSheet();
-            showPaymentSuccessModal(data, method);
-            checkActiveTracking();
-        } else {
-            alert("Payment Error: " + data.message);
+            // If hourly, create active shift
+            if (selectedBookingTarget.service_type === 'hourly') {
+                DB.addTimeLog({
+                    booking_id: newBooking.id,
+                    booking_code: bookingCode,
+                    worker_id: selectedBookingTarget.worker_id,
+                    worker_name: selectedBookingTarget.name,
+                    nationality: 'Indonesian',
+                    profession: 'Domestic Worker',
+                    client_name: clientName,
+                    client_address: clientAddress,
+                    service_type: 'hourly',
+                    hours_allocated: selectedBookingTarget.hours_allocated || 4.0,
+                    check_in_time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                    check_out_time: null,
+                    hours_worked: 0,
+                    location_lat: 24.7136,
+                    location_lng: 46.6753,
+                    supervisor_verified: 1,
+                    client_signature_token: 'PENDING',
+                    notes: 'Shift started via client app.',
+                    status: 'active'
+                });
+            }
         }
-    } catch (e) {
-        btn.innerHTML = originalContent;
-        btn.disabled = false;
-        alert("Failed to connect to payment server.");
-    }
+
+        closePaymentSheet();
+        showPaymentSuccessModal({
+            booking_code: bookingCode,
+            total_amount: selectedBookingTarget.amount,
+            payment_ref: paymentRef,
+            kafala_eligible: isKafala,
+            kafala_notice: isKafala ? 'Package includes eligibility for Sponsorship Transfer (Kafala) upon expiration, subject to Ministry nationality caps.' : null
+        }, method);
+
+        checkActiveTracking();
+        checkKafalaEligibility();
+    }, 900);
 }
 
-// 10. Payment Success Modal with Apple Pay / GPay confirmation
+// 10. Payment Success Modal
 function showPaymentSuccessModal(data, method) {
     const modal = document.getElementById('paymentSuccessModal');
     if (!modal) return;
@@ -270,7 +324,7 @@ function showPaymentSuccessModal(data, method) {
     document.getElementById('successBookingCode').innerText = data.booking_code;
     document.getElementById('successAmount').innerText = Number(data.total_amount).toLocaleString() + ' SAR';
     document.getElementById('successPaymentRef').innerText = data.payment_ref;
-    document.getElementById('successMethodName').innerText = (method === 'apple_pay') ? 'Apple Pay' : 'Google Pay';
+    document.getElementById('successMethodName').innerText = (method === 'apple_pay') ? 'Apple Pay' : (method === 'google_pay' ? 'Google Pay' : 'Mada');
 
     const kafalaAlert = document.getElementById('successKafalaAlert');
     if (kafalaAlert) {
@@ -292,12 +346,31 @@ function closeSuccessModal() {
 
 // 11. Check Active Real-Time Service Tracking
 async function checkActiveTracking() {
+    const panel = document.getElementById('liveTrackingContainer');
+    if (!panel) return;
+
+    if (typeof DB !== 'undefined') {
+        const activeLogs = DB.getTimeLogs().filter(l => l.status === 'active');
+        if (activeLogs.length > 0) {
+            activeLiveLog = activeLogs[0];
+            panel.style.display = 'block';
+            document.getElementById('trackingWorkerName').innerText = activeLiveLog.worker_name;
+            document.getElementById('trackingProfession').innerText = `${activeLiveLog.profession} (${activeLiveLog.nationality || 'Verified'})`;
+            document.getElementById('trackingAddress').innerText = activeLiveLog.client_address;
+            const remaining = (activeLiveLog.hours_allocated > 0) ? (activeLiveLog.hours_allocated - (activeLiveLog.hours_worked || 0)) : 'Monthly';
+            document.getElementById('trackingRemaining').innerText = remaining + ' hrs remaining';
+            startLiveTimer(activeLiveLog.check_in_time);
+            return;
+        } else {
+            panel.style.display = 'none';
+            if (timerInterval) clearInterval(timerInterval);
+            return;
+        }
+    }
+
     try {
         const res = await fetch('../api/time-tracker.php?action=live_active');
         const data = await res.json();
-        const panel = document.getElementById('liveTrackingContainer');
-        if (!panel) return;
-
         if (data.success && data.data.length > 0) {
             activeLiveLog = data.data[0];
             panel.style.display = 'block';
@@ -305,15 +378,13 @@ async function checkActiveTracking() {
             document.getElementById('trackingProfession').innerText = `${activeLiveLog.profession} (${activeLiveLog.nationality})`;
             document.getElementById('trackingAddress').innerText = activeLiveLog.client_address;
             document.getElementById('trackingRemaining').innerText = activeLiveLog.remaining_hours + ' hrs remaining';
-
-            // Start live timer
             startLiveTimer(activeLiveLog.check_in_time);
         } else {
             panel.style.display = 'none';
             if (timerInterval) clearInterval(timerInterval);
         }
     } catch (e) {
-        console.error("Tracking check failed", e);
+        if (panel) panel.style.display = 'none';
     }
 }
 
@@ -341,63 +412,62 @@ function startLiveTimer(checkInTimeStr) {
 
 // 12. Check and Display Kafala Notification for Matured 3-Month Packages
 async function checkKafalaEligibility() {
-    try {
-        const res = await fetch('../api/bookings.php?action=check_kafala_notifications');
-        const data = await res.json();
-        const banner = document.getElementById('kafalaNotificationBanner');
-        if (!banner) return;
+    const banner = document.getElementById('kafalaNotificationBanner');
+    if (!banner) return;
 
-        if (data.success && data.data.length > 0) {
-            const matured = data.data[0];
-            banner.style.display = 'block';
-            banner.innerHTML = `
-                <div style="background:linear-gradient(135deg, #1e3a8a, #2563eb); color:white; padding:1rem; border-radius:16px; margin:1rem; box-shadow:0 6px 15px rgba(37,99,235,0.3);">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; gap:0.6rem; align-items:center;">
-                            <i class="fa-solid fa-bell text-warning fa-lg"></i>
-                            <div>
-                                <h4 style="font-size:0.9rem; font-weight:700;">Eligible for Sponsorship Transfer (Kafala)!</h4>
-                                <p style="font-size:0.75rem; opacity:0.9;">Your 3-month package with <strong>${matured.worker_name} (${matured.nationality})</strong> has concluded.</p>
-                            </div>
+    let eligible = null;
+    if (typeof DB !== 'undefined') {
+        const bookings = DB.getBookings();
+        eligible = bookings.find(b => b.kafala_status === 'eligible' || b.kafala_notified == 1);
+    }
+
+    if (eligible) {
+        banner.style.display = 'block';
+        banner.innerHTML = `
+            <div style="background:linear-gradient(135deg, #1e3a8a, #2563eb); color:white; padding:1rem; border-radius:16px; margin:1rem; box-shadow:0 6px 15px rgba(37,99,235,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; gap:0.6rem; align-items:center;">
+                        <i class="fa-solid fa-bell text-warning fa-lg"></i>
+                        <div>
+                            <h4 style="font-size:0.9rem; font-weight:700;">Eligible for Sponsorship Transfer (Kafala)!</h4>
+                            <p style="font-size:0.75rem; opacity:0.9;">Your 3-month package with <strong>${eligible.worker_name} (${eligible.nationality})</strong> has concluded.</p>
                         </div>
-                        <button class="btn btn-sm btn-primary" style="background:#fbbf24; color:#78350f; font-weight:700;" onclick="openKafalaApplication(${matured.id})">
-                            Apply Transfer
-                        </button>
                     </div>
+                    <button class="btn btn-sm btn-primary" style="background:#fbbf24; color:#78350f; font-weight:700;" onclick="openKafalaApplication(${eligible.id})">
+                        Apply Transfer
+                    </button>
                 </div>
-            `;
-        } else {
-            banner.style.display = 'none';
-        }
-    } catch (e) {
-        console.error("Kafala check failed", e);
+            </div>
+        `;
+    } else {
+        banner.style.display = 'none';
     }
 }
 
 // 13. Open Kafala Application Modal & Enforce Ministry Quota
-async function openKafalaApplication(bookingId) {
-    try {
-        const res = await fetch(`../api/kafala.php?action=check_booking_eligibility&booking_id=${bookingId}`);
-        const data = await res.json();
+function openKafalaApplication(bookingId) {
+    if (typeof DB !== 'undefined') {
+        const bookings = DB.getBookings();
+        const b = bookings.find(bk => bk.id == bookingId);
+        if (!b) return;
 
-        if (!data.success) {
-            alert(data.message);
-            return;
-        }
+        const quotas = DB.getQuotas();
+        const q = quotas.find(qt => qt.nationality === b.nationality) || quotas[0];
+        const remaining = Math.max(0, q.max_kafala_transfers_allowed - q.kafala_transfers_used);
 
         const modal = document.getElementById('kafalaModal');
         if (!modal) return;
 
-        document.getElementById('kafalaWorkerName').innerText = data.booking.worker_name;
-        document.getElementById('kafalaNationality').innerText = data.nationality;
-        document.getElementById('kafalaQuotaRemaining').innerText = data.remaining_transfers_allowed + ' transfers remaining in Ministry quota';
+        document.getElementById('kafalaWorkerName').innerText = b.worker_name;
+        document.getElementById('kafalaNationality').innerText = b.nationality;
+        document.getElementById('kafalaQuotaRemaining').innerText = remaining + ' transfers remaining in Ministry quota';
 
         const warningDiv = document.getElementById('kafalaQuotaWarning');
         const submitBtn = document.getElementById('btnSubmitKafala');
 
-        if (data.quota_blocked) {
+        if (remaining <= 0) {
             warningDiv.style.display = 'block';
-            warningDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Ministry Quota Exceeded:</strong> No additional sponsorship transfers are currently permitted for ${data.nationality} workers under Ministry rules.`;
+            warningDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Ministry Quota Exceeded:</strong> No additional sponsorship transfers are currently permitted for ${b.nationality} workers under Ministry rules.`;
             submitBtn.disabled = true;
         } else {
             warningDiv.style.display = 'none';
@@ -406,8 +476,7 @@ async function openKafalaApplication(bookingId) {
 
         modal.dataset.bookingId = bookingId;
         modal.classList.add('active');
-    } catch (e) {
-        alert("Failed to load Kafala eligibility data.");
+        return;
     }
 }
 
@@ -416,7 +485,7 @@ function closeKafalaModal() {
     if (modal) modal.classList.remove('active');
 }
 
-async function submitKafalaTransfer() {
+function submitKafalaTransfer() {
     const modal = document.getElementById('kafalaModal');
     const bookingId = modal.dataset.bookingId;
     const nationalId = document.getElementById('kafalaNationalId').value;
@@ -426,26 +495,14 @@ async function submitKafalaTransfer() {
         return;
     }
 
-    try {
-        const res = await fetch('../api/kafala.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'request_transfer',
-                booking_id: bookingId,
-                client_id_number: nationalId
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert("Success: " + data.message);
+    if (typeof DB !== 'undefined') {
+        const res = DB.requestKafala(bookingId, nationalId);
+        if (res.success) {
+            alert(res.message);
             closeKafalaModal();
             checkKafalaEligibility();
         } else {
-            alert("Ministry Quota Rule Warning: " + data.message);
+            alert(res.message);
         }
-    } catch (e) {
-        alert("Error submitting Kafala transfer request.");
     }
 }
